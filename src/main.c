@@ -15,16 +15,174 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(mender_app, LOG_LEVEL_DBG);
 
-#include "utils/callbacks.h"
 #include "utils/netup.h"
 #include "utils/certs.h"
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
 
-#include <mender/utils.h>
-#include <mender/client.h>
-#include <mender/inventory.h>
+#include "mender/client.h"
+#include "mender/inventory.h"
+
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/led_strip.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/spi.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/drivers/hwinfo.h>
+
+#define STRIP_NODE		DT_ALIAS(led_strip)
+#define STRIP_NUM_PIXELS	DT_PROP(DT_ALIAS(led_strip), chain_length)
+
+#define SLEEP_TIME_MS 1000
+
+#define RGB(_r, _g, _b) { .r = (_r), .g = (_g), .b = (_b) }
+
+static const struct led_rgb O = RGB(0x00, 0x00, 0x00);
+static const struct led_rgb W = RGB(0xff, 0xff, 0xff);
+
+const struct led_rgb pixels_off[STRIP_NUM_PIXELS] = {
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O
+};
+
+const struct led_rgb pixels_boot[STRIP_NUM_PIXELS] = {
+    O, O, O, O, O, O, O, O,
+    O, O, O, W, W, O, O, O,
+    O, O, W, O, O, W, O, O,
+    O, W, O, O, O, O, W, O,
+    O, W, O, O, O, O, W, O,
+    O, O, W, O, O, W, O, O,
+    O, O, O, W, W, O, O, O,
+    O, O, O, O, O, O, O, O
+};
+
+// To configure which pixel art to use
+#ifndef MATRIX_ART
+#define MATRIX_ART 1
+#endif
+
+#if MATRIX_ART == 1
+
+static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
+static const struct led_rgb Y = RGB(0x0f, 0x0f, 0x00);
+
+// Smile
+const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
+    O, O, Y, Y, Y, Y, O, O,
+    O, Y, Y, Y, Y, Y, Y, O,
+    Y, Y, W, W, Y, R, Y, Y,
+    Y, R, Y, Y, Y, Y, Y, Y,
+    Y, Y, Y, Y, Y, Y, R, Y,
+    Y, Y, R, Y, W, W, Y, Y,
+    O, Y, Y, Y, Y, Y, Y, O,
+    O, O, Y, Y, Y, Y, O, O
+};
+
+const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
+    R, R, Y, Y, Y, Y, R, R,
+    R, Y, Y, Y, Y, Y, Y, R,
+    Y, Y, W, W, Y, R, Y, Y,
+    Y, R, Y, Y, Y, Y, Y, Y,
+    Y, Y, Y, Y, Y, Y, R, Y,
+    Y, Y, R, Y, W, W, Y, Y,
+    R, Y, Y, Y, Y, Y, Y, R,
+    R, R, Y, Y, Y, Y, R, R
+};
+
+#elif MATRIX_ART == 2
+
+static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
+
+// Heart
+const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
+    O, O, R, R, R, O, O, O,
+    O, O, R, R, R, R, R, O,
+    O, R, R, R, R, R, R, O,
+    R, R, R, R, R, R, O, O,
+    O, O, R, R, R, R, R, R,
+    O, R, R, R, R, R, R, O,
+    O, R, R, R, R, R, O, O,
+    O, O, O, R, R, R, O, O
+};
+
+const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
+    R, R, O, O, O, R, R, R,
+    R, R, O, O, O, O, O, R,
+    R, O, O, O, O, O, O, R,
+    O, O, O, O, O, O, R, R,
+    R, R, O, O, O, O, O, O,
+    R, O, O, O, O, O, O, R,
+    R, O, O, O, O, O, R, R,
+    R, R, R, O, O, O, R, R
+};
+
+#elif MATRIX_ART == 3
+
+static const struct led_rgb M = RGB(0x80, 0x80, 0x80);
+static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
+static const struct led_rgb G = RGB(0x00, 0x0f, 0x00);
+static const struct led_rgb B = RGB(0x00, 0x00, 0x0f);
+static const struct led_rgb Y = RGB(0x0f, 0x0f, 0x00);
+
+// Rainbow
+const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
+    R, R, R, R, R, R, R, R,
+    Y, Y, Y, Y, Y, Y, Y, Y,
+    G, G, G, G, G, G, G, G,
+    B, B, B, B, B, B, B, B,
+    M, M, M, M, M, M, M, M,
+    R, R, R, R, R, R, R, R,
+    Y, Y, Y, Y, Y, Y, Y, Y,
+    G, G, G, G, G, G, G, G
+};
+
+const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
+    Y, Y, Y, Y, Y, Y, Y, Y,
+    G, G, G, G, G, G, G, G,
+    R, R, R, R, R, R, R, R,
+    Y, Y, Y, Y, Y, Y, Y, Y,
+    G, G, G, G, G, G, G, G,
+    B, B, B, B, B, B, B, B,
+    M, M, M, M, M, M, M, M,
+    R, R, R, R, R, R, R, R
+};
+
+#else  // MATRIX_ART != 1
+
+static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
+
+const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
+    R, R, R, W, W, R, R, R,
+    R, R, R, W, W, R, R, R,
+    R, R, R, W, W, R, R, R,
+    W, W, W, W, W, W, W, W,
+    W, W, W, W, W, W, W, W,
+    R, R, R, W, W, R, R, R,
+    R, R, R, W, W, R, R, R,
+    R, R, R, W, W, R, R, R
+};
+
+const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
+    W, W, W, R, R, W, W, W,
+    W, W, W, R, R, W, W, W,
+    W, W, W, R, R, W, W, W,
+    R, R, R, R, R, R, R, R,
+    R, R, R, R, R, R, R, R,
+    W, W, W, R, R, W, W, W,
+    W, W, W, R, R, W, W, W,
+    W, W, W, R, R, W, W, W
+};
+
+#endif  // MATRIX_ART
+
+static const struct device *const strip = DEVICE_DT_GET(STRIP_NODE);
 
 #ifdef BUILD_INTEGRATION_TESTS
 #include "modules/test-update-module.h"
@@ -70,8 +228,8 @@ mender_restart_cb(void) {
     return MENDER_OK;
 }
 
-static char              mac_address[18] = { 0 };
-static mender_identity_t mender_identity = { .name = "mac", .value = mac_address };
+static char              chip_id[18] = { 0 };
+static mender_identity_t mender_identity = { .name = "chip_id", .value = chip_id };
 
 MENDER_FUNC_WEAK mender_err_t
 mender_get_identity_cb(const mender_identity_t **identity) {
@@ -83,6 +241,14 @@ mender_get_identity_cb(const mender_identity_t **identity) {
     return MENDER_FAIL;
 }
 
+static void set_leds(const struct led_rgb data[]) {
+	int rc = led_strip_update_rgb(strip, (struct led_rgb *)data, STRIP_NUM_PIXELS);
+    if (rc) {
+        LOG_ERR("couldn't update strip: %d", rc);
+    }
+}
+
+
 static mender_err_t
 persistent_inventory_cb(mender_keystore_t **keystore, uint8_t *keystore_len) {
     static mender_keystore_t inventory[] = { { .name = "App", .value = "mender-mcu-integration" } };
@@ -93,11 +259,37 @@ persistent_inventory_cb(mender_keystore_t **keystore, uint8_t *keystore_len) {
 
 int
 main(void) {
-    printf("Hello World! %s\n", CONFIG_BOARD_TARGET);
+    int led_ready = 0;
+    int toggle = 0;
+
+    uint8_t chip_id[16];
+    char id_str[sizeof(chip_id) * 2 + 1];
+    ssize_t length = hwinfo_get_device_id(chip_id, sizeof(chip_id));
+
+    if (length > 0) {
+        bin2hex(chip_id, length, mender_identity.value, sizeof(id_str));
+
+        LOG_INF("ESP32 Chip ID: %s", mender_identity.value);
+    } else {
+        LOG_ERR("Failed to get Chip ID");
+    }
+
+    if (device_is_ready(strip)) {
+		LOG_INF("Found LED strip device %s", strip->name);
+        led_ready = 1;
+	} else {
+		LOG_ERR("LED strip device %s is not ready", strip->name);
+		goto END;
+    }
+
+    if (led_ready) {
+		LOG_INF("Clearing LEDS...");
+        set_leds(pixels_off);
+		LOG_INF(".. setting startup LEDS.");
+        set_leds(pixels_boot);
+    }
 
     netup_wait_for_network();
-
-    netup_get_mac_address(mender_identity.value);
 
     certs_add_credentials();
 
@@ -156,6 +348,19 @@ main(void) {
         goto END;
     }
     LOG_INF("Mender client activated and running!");
+
+    while (1) {
+        if (toggle) {
+            toggle = 0;
+            set_leds(pixels_payload1);
+        }
+        else {
+            toggle = 1;
+            set_leds(pixels_payload2);
+        }
+        //LOG_INF("ESP32 CHIP ID: %s", mender_identity.value);
+		k_msleep(SLEEP_TIME_MS);
+    }
 
 END:
     k_sleep(K_FOREVER);
