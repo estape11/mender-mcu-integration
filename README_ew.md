@@ -32,6 +32,7 @@ source myenv/bin/activate
 Install the esptool library
 ```
 pip install esptool
+pip install pyelftool
 ```
 
 Build the bootloader
@@ -45,9 +46,14 @@ python -m esptool --chip esp32-s3 erase_flash  && west flash
 ```
 
 ### OS/application
-Change the directory to the main ew2025na-new folder
+Change the directory to the main ew2025na folder
 ```
-cd ew2025na-new
+cd ew2025na
+```
+
+Source the env
+```
+source bootloader/mcuboot/boot/zephyr/myenv/bin/activate
 ```
 
 Build the binary
