@@ -17,10 +17,9 @@
 		int-gpios = <&gpio0 4 GPIO_ACTIVE_LOW>;
 		reset-gpios = <&gpio0 5 GPIO_ACTIVE_LOW>;
 
-		/* *************************** */
-		/* Write here your MAC address */
-		/* *************************** */
-        local-mac-address = [00 08 DC 01 02 03];
+		zephyr-random-mac-address;
+
+		/* MAC address is set at runtime from device ID */
 		status = "okay";
 	};
 };

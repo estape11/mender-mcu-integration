@@ -154,6 +154,33 @@ const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
     R, R, R, R, R, R, R, R
 };
 
+#elif MATRIX_ART == 5
+
+static const struct led_rgb B = RGB(0x33, 0x7A, 0x87);
+static const struct led_rgb M = RGB(0xA3, 0x17, 0x73);
+
+const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
+    O, O, O, B, B, O, O, O,
+    O, M, O, B, B, O, M, O,
+    O, O, O, B, B, O, O, O,
+    B, B, B, B, B, B, B, B,
+    B, B, B, B, B, B, B, B,
+    O, O, O, B, B, O, O, O,
+    O, M, O, B, B, O, M, O,
+    O, O, O, B, B, O, O, O
+};
+
+const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
+    O, O, O, M, M, O, O, O,
+    O, B, O, M, M, O, B, O,
+    O, O, O, M, M, O, O, O,
+    M, M, M, M, M, M, M, M,
+    M, M, M, M, M, M, M, M,
+    O, O, O, M, M, O, O, O,
+    O, B, O, M, M, O, B, O,
+    O, O, O, M, M, O, O, O
+};
+
 #else  // MATRIX_ART != 1
 
 static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
@@ -288,6 +315,10 @@ main(void) {
 		LOG_INF(".. setting startup LEDS.");
         set_leds(pixels_boot);
     }
+
+    char mac_address[18];
+    netup_get_mac_address(mac_address);
+    LOG_INF("MAC Address: %s", mac_address);
 
     netup_wait_for_network();
 
