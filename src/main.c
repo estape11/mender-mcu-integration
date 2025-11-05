@@ -159,6 +159,7 @@ const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
 static const struct led_rgb B = RGB(0x00, 0x00, 0x0f);
 static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
 
+// Norway
 const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
     R, R, W, B, B, W, R, R,
     R, R, W, B, B, W, R, R,
@@ -186,6 +187,7 @@ const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
 static const struct led_rgb B = RGB(0x33, 0x7A, 0x87);
 static const struct led_rgb M = RGB(0xA3, 0x17, 0x73);
 
+// Croix-v2
 const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
     O, O, O, B, B, O, O, O,
     O, M, O, B, B, O, M, O,
@@ -206,6 +208,86 @@ const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
     O, O, O, M, M, O, O, O,
     O, B, O, M, M, O, B, O,
     O, O, O, M, M, O, O, O
+};
+
+#elif MATRIX_ART == 6
+
+static const struct led_rgb B = RGB(0x00, 0x00, 0x0f);
+static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
+
+const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B
+};
+
+const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B,
+    B, W, R, R, R, R, W, B
+};
+
+#elif MATRIX_ART == 7
+
+static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
+
+const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
+    O, O, O, O, O, O, O, O,
+    O, R, O, O, O, O, R, O,
+    O, O, R, O, O, R, O, O,
+    O, O, O, R, R, O, O, O,
+    O, O, O, R, R, O, O, O,
+    O, O, R, O, O, R, O, O,
+    O, R, O, O, O, O, R, O,
+    O, O, O, O, O, O, O, O
+};
+
+const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O
+};
+
+#elif MATRIX_ART == 8
+
+static const struct led_rgb B = RGB(0x33, 0x7A, 0x87);
+static const struct led_rgb M = RGB(0xA3, 0x17, 0x73);
+
+const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
+    O, O, O, O, O, O, O, O,
+    O, B, B, B, B, B, B, O,
+    O, B, B, O, O, O, B, O,
+    O, B, O, O, B, O, B, O,
+    O, B, O, B, O, O, B, O,
+    O, B, O, O, O, B, B, O,
+    O, B, B, B, B, B, B, O,
+    O, O, O, O, O, O, O, O
+};
+
+const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
+    O, O, O, O, O, O, O, O,
+    O, M, M, M, M, M, M, O,
+    O, M, M, O, O, O, M, O,
+    O, M, O, O, M, O, M, O,
+    O, M, O, M, O, O, M, O,
+    O, M, O, O, O, M, M, O,
+    O, M, M, M, M, M, M, O,
+    O, O, O, O, O, O, O, O
 };
 
 #else  // MATRIX_ART != 1
@@ -311,6 +393,25 @@ persistent_inventory_cb(mender_keystore_t **keystore, uint8_t *keystore_len) {
     return MENDER_OK;
 }
 
+static void pixels_boot_animation() {
+    const int circle_pixels[] = {3, 4, 10, 22, 24, 39, 41, 53, 59, 60, 50, 46, 32, 31, 17, 13};
+    const int num_circle_pixels = sizeof(circle_pixels) / sizeof(circle_pixels[0]);
+
+    struct led_rgb pixels[STRIP_NUM_PIXELS];
+
+    // Clear all pixels
+    for (int j = 0; j < STRIP_NUM_PIXELS; j++) {
+        pixels[j] = O;
+    }
+
+    for (int i = 0; i < num_circle_pixels; i++) {
+        // Light up pixels one by one
+        pixels[circle_pixels[i]] = W;
+        set_leds(pixels);
+        k_msleep(100); // 100ms delay
+    }
+}
+
 int
 main(void) {
     int led_ready = 0;
@@ -340,7 +441,7 @@ main(void) {
 		LOG_INF("Clearing LEDS...");
         set_leds(pixels_off);
 		LOG_INF(".. setting startup LEDS.");
-        set_leds(pixels_boot);
+        pixels_boot_animation();
     }
 
     char mac_address[18];
