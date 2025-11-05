@@ -1,0 +1,140 @@
+From 74b0743d62cb740764de240e8081d322519d339c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Esteban=20Ag=C3=BCero=20P=C3=A9rez?=
+ <esteban.aguero@northern.tech>
+Date: Tue, 4 Nov 2025 22:59:48 -0600
+Subject: [PATCH] Set custom MAC address for the EW2025-NA demo
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Esteban Agüero Pérez <esteban.aguero@northern.tech>
+---
+ drivers/ethernet/eth_w5500.c            | 93 +++++++++++++++++++++++--
+ dts/bindings/ethernet/wiznet,w5500.yaml |  3 +
+ 2 files changed, 91 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/ethernet/eth_w5500.c b/drivers/ethernet/eth_w5500.c
+index 61ed576e9c9..5c0c14d07ea 100644
+--- a/drivers/ethernet/eth_w5500.c
++++ b/drivers/ethernet/eth_w5500.c
+@@ -21,6 +21,7 @@ LOG_MODULE_REGISTER(eth_w5500, CONFIG_ETHERNET_LOG_LEVEL);
+ #include <zephyr/net/net_if.h>
+ #include <zephyr/net/ethernet.h>
+ #include <ethernet/eth_stats.h>
++#include <zephyr/drivers/hwinfo.h>
+ 
+ #include "eth.h"
+ #include "eth_w5500_priv.h"
+@@ -500,11 +501,93 @@ static void w5500_gpio_callback(const struct device *dev,
+ static void w5500_set_macaddr(const struct device *dev)
+ {
+ 	struct w5500_runtime *ctx = dev->data;
+-
+-#if DT_INST_PROP(0, zephyr_random_mac_address)
+-	gen_random_mac(ctx->mac_addr, WIZNET_OUI_B0, WIZNET_OUI_B1, WIZNET_OUI_B2);
+-#endif
+-
++uint8_t chip_id[12];
++    ssize_t length = hwinfo_get_device_id(chip_id, sizeof(chip_id));
++
++    // --- START: CORRECTED LOGIC ---
++
++    // On ESP32, the ID length should be 6 bytes
++    if (length == 6) {
++        // Use memcmp to compare the 6-byte ID from chip_id[0]...chip_id[5]
++        
++        if (memcmp(chip_id, "\xb4\x3a\x45\xa5\x56\x30", 6) == 0) {
++            ctx->mac_addr[0] = 0xCA;
++            ctx->mac_addr[1] = 0xFE;
++            ctx->mac_addr[2] = 0x00;
++            ctx->mac_addr[3] = 0x00;
++            ctx->mac_addr[4] = 0x00;
++            ctx->mac_addr[5] = 0x01;
++        } else if (memcmp(chip_id, "\xb4\x3a\x45\xa5\xcc\x58", 6) == 0) {
++            ctx->mac_addr[0] = 0xCA;
++            ctx->mac_addr[1] = 0xFE;
++            ctx->mac_addr[2] = 0x00;
++            ctx->mac_addr[3] = 0x00;
++            ctx->mac_addr[4] = 0x00;
++            ctx->mac_addr[5] = 0x10;
++        } else if (memcmp(chip_id, "\xb4\x3a\x45\xa5\xd6\x0c", 6) == 0) {
++            ctx->mac_addr[0] = 0xCA;
++            ctx->mac_addr[1] = 0xFE;
++            ctx->mac_addr[2] = 0x00;
++            ctx->mac_addr[3] = 0x00;
++            ctx->mac_addr[4] = 0x00;
++            ctx->mac_addr[5] = 0x11;
++        } else if (memcmp(chip_id, "\xb4\x3a\x45\xa5\xd4\xc4", 6) == 0) {
++            ctx->mac_addr[0] = 0xCA;
++            ctx->mac_addr[1] = 0xFE;
++            ctx->mac_addr[2] = 0x00;
++            ctx->mac_addr[3] = 0x00;
++            ctx->mac_addr[4] = 0x01;
++            ctx->mac_addr[5] = 0x00;
++        } else if (memcmp(chip_id, "\xb4\x3a\x45\xa5\xbd\xec", 6) == 0) {
++            ctx->mac_addr[0] = 0xCA;
++            ctx->mac_addr[1] = 0xFE;
++            ctx->mac_addr[2] = 0x00;
++            ctx->mac_addr[3] = 0x00;
++            ctx->mac_addr[4] = 0x01;
++            ctx->mac_addr[5] = 0x01;
++        } else if (memcmp(chip_id, "\xb4\x3a\x45\xa5\x5d\xa4", 6) == 0) {
++            ctx->mac_addr[0] = 0xCA;
++            ctx->mac_addr[1] = 0xFE;
++            ctx->mac_addr[2] = 0x00;
++            ctx->mac_addr[3] = 0x00;
++            ctx->mac_addr[4] = 0x01;
++            ctx->mac_addr[5] = 0x10;
++        } else if (memcmp(chip_id, "\xb4\x3a\x45\xa5\xd2\x34", 6) == 0) {
++            ctx->mac_addr[0] = 0xCA;
++            ctx->mac_addr[1] = 0xFE;
++            ctx->mac_addr[2] = 0x00;
++            ctx->mac_addr[3] = 0x00;
++            ctx->mac_addr[4] = 0x01;
++            ctx->mac_addr[5] = 0x11;
++        } else if (memcmp(chip_id, "\xb4\x3a\x45\xa5\xd3\x74", 6) == 0) {
++            ctx->mac_addr[0] = 0xCA;
++            ctx->mac_addr[1] = 0xFE;
++            ctx->mac_addr[2] = 0x00;
++            ctx->mac_addr[3] = 0x00;
++            ctx->mac_addr[4] = 0x10;
++            ctx->mac_addr[5] = 0x00;
++        } else if (memcmp(chip_id, "\xb4\x3a\x45\xa5\xd1\x98", 6) == 0) {
++            ctx->mac_addr[0] = 0xCA;
++            ctx->mac_addr[1] = 0xFE;
++            ctx->mac_addr[2] = 0x00;
++            ctx->mac_addr[3] = 0x00;
++            ctx->mac_addr[4] = 0x10;
++            ctx->mac_addr[5] = 0x01;
++        } else if (memcmp(chip_id, "\xb4\x3a\x45\xa5\x5d\xa0", 6) == 0) {
++            ctx->mac_addr[0] = 0xCA;
++            ctx->mac_addr[1] = 0xFE;
++            ctx->mac_addr[2] = 0x00;
++            ctx->mac_addr[3] = 0x00;
++            ctx->mac_addr[4] = 0x10;
++            ctx->mac_addr[5] = 0x10;
++        } else {
++            // The 6-byte ID was valid but didn't match any known values
++            gen_random_mac(ctx->mac_addr, WIZNET_OUI_B0, WIZNET_OUI_B1, WIZNET_OUI_B2);
++        }
++    } else {
++        // Failed to get ID or got an unexpected length
++        gen_random_mac(ctx->mac_addr, WIZNET_OUI_B0, WIZNET_OUI_B1, WIZNET_OUI_B2);
++    }
+ 	w5500_spi_write(dev, W5500_SHAR, ctx->mac_addr, sizeof(ctx->mac_addr));
+ }
+ 
+diff --git a/dts/bindings/ethernet/wiznet,w5500.yaml b/dts/bindings/ethernet/wiznet,w5500.yaml
+index 1490f0763b9..3858e8ad3a8 100644
+--- a/dts/bindings/ethernet/wiznet,w5500.yaml
++++ b/dts/bindings/ethernet/wiznet,w5500.yaml
+@@ -23,3 +23,6 @@ properties:
+       The reset pin of W5500 is active low.
+       If connected directly the MCU pin should be configured
+       as active low.
++  zephyr-random-mac-address:
++      type: boolean
++      description: Generate a random MAC address if no local-mac-address is provided.
+-- 
+2.50.1 (Apple Git-155)
+

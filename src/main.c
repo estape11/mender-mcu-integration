@@ -154,6 +154,33 @@ const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
     R, R, R, R, R, R, R, R
 };
 
+#elif MATRIX_ART == 4
+
+static const struct led_rgb B = RGB(0x00, 0x00, 0x0f);
+static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
+
+const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
+    R, R, W, B, B, W, R, R,
+    R, R, W, B, B, W, R, R,
+    W, W, W, B, B, W, W, W,
+    B, B, B, B, B, B, B, B,
+    B, B, B, B, B, B, B, B,
+    W, W, W, B, B, W, W, W,
+    R, R, W, B, B, W, R, R,
+    R, R, W, B, B, W, R, R
+};
+
+const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
+    R, R, W, B, B, W, R, R,
+    R, R, W, B, B, W, R, R,
+    W, W, W, B, B, W, W, W,
+    B, B, B, B, B, B, B, B,
+    B, B, B, B, B, B, B, B,
+    W, W, W, B, B, W, W, W,
+    R, R, W, B, B, W, R, R,
+    R, R, W, B, B, W, R, R
+};
+
 #elif MATRIX_ART == 5
 
 static const struct led_rgb B = RGB(0x33, 0x7A, 0x87);

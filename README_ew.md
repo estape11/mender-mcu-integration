@@ -51,6 +51,10 @@ Change the directory to the main ew2025na folder
 cd ew2025na
 ```
 
+Apply the MAC address patch
+```
+cd zephyr && git am ../mender-mcu-integration/0001-Set-custom-MAC-address-for-the-EW2025-NA-demo.patch && cd ..
+
 Source the env
 ```
 source bootloader/mcuboot/boot/zephyr/myenv/bin/activate
