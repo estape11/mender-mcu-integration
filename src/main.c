@@ -215,6 +215,7 @@ const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
 static const struct led_rgb B = RGB(0x00, 0x00, 0x0f);
 static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
 
+// Costa Rica
 const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
     B, W, R, R, R, R, W, B,
     B, W, R, R, R, R, W, B,
@@ -241,6 +242,7 @@ const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
 
 static const struct led_rgb R = RGB(0x0f, 0x00, 0x00);
 
+// Fail
 const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
     O, O, O, O, O, O, O, O,
     O, R, O, O, O, O, R, O,
@@ -268,6 +270,7 @@ const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
 static const struct led_rgb B = RGB(0x33, 0x7A, 0x87);
 static const struct led_rgb M = RGB(0xA3, 0x17, 0x73);
 
+// eMail
 const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
     O, O, O, O, O, O, O, O,
     O, B, B, B, B, B, B, O,
@@ -287,6 +290,33 @@ const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
     O, M, O, M, O, O, M, O,
     O, M, O, O, O, M, M, O,
     O, M, M, M, M, M, M, O,
+    O, O, O, O, O, O, O, O
+};
+
+#elif MATRIX_ART == 9
+
+static const struct led_rgb G = RGB(0x00, 0x0f, 0x00);
+
+// Check
+const struct led_rgb pixels_payload1[STRIP_NUM_PIXELS] = {
+    O, O, O, O, O, O, O, O,
+    O, O, G, O, O, O, O, O,
+    O, O, O, O, O, O, G, O,
+    O, O, G, O, O, O, O, O,
+    O, O, O, O, G, O, O, O,
+    O, O, O, O, G, O, O, O,
+    O, O, G, O, O, O, O, O,
+    O, O, O, O, O, O, O, O
+};
+
+const struct led_rgb pixels_payload2[STRIP_NUM_PIXELS] = {
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
+    O, O, O, O, O, O, O, O,
     O, O, O, O, O, O, O, O
 };
 
