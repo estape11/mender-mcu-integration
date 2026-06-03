@@ -93,7 +93,7 @@ persistent_inventory_cb(mender_keystore_t **keystore, uint8_t *keystore_len) {
 
 int
 main(void) {
-    printf("Hello World! %s\n", CONFIG_BOARD_TARGET);
+    printf("Version: standard-v2 %s\n", CONFIG_BOARD_TARGET);
 
     netup_wait_for_network();
 
@@ -112,6 +112,7 @@ main(void) {
 
     LOG_INF("Initializing Mender Client with:");
     LOG_INF("   Device type:   '%s'", mender_client_config.device_type);
+    //LOG_INF("   Device Tier:   '%s'", mender_client_config.device_tier);
     LOG_INF("   Identity:      '{\"%s\": \"%s\"}'", mender_identity.name, mender_identity.value);
 
     if (MENDER_OK != mender_client_init(&mender_client_config, &mender_client_callbacks)) {
