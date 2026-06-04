@@ -547,3 +547,12 @@ Polling estable cada 30s (el intervalo configurado de demo).
    apunte al header privatizado de Mbed TLS 4.x.
 5. Cuando los dos puntos anteriores se resuelvan, retomar
    `chore/zephyr-4.4-phase-3-fixes` y completar la migración.
+6. **`esp32_wifi_adapter: memory allocation failed`** sigue apareciendo
+   periódicamente (cada 1–2 min) bajo 4.3, igual que en 4.2.0. No es
+   regresión del upgrade, es deuda preexistente del pool de heap del
+   WiFi adapter. Mender sigue funcionando — los polls posteriores a
+   cada warning completan OK. Fix probable: mover el heap a SPIRAM
+   (`CONFIG_ESP_WIFI_HEAP_SPIRAM=y`) habilitando antes
+   `CONFIG_SHARED_MULTI_HEAP=y` para resolver los símbolos
+   `shared_multi_heap_*`. Alternativa más conservadora: subir el pool
+   del sistema vía `CONFIG_HEAP_MEM_POOL_ADD_SIZE_ESP_WIFI`.
