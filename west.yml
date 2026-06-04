@@ -18,6 +18,7 @@ manifest:
           - hal_nxp
           - hal_nordic
           - hal_espressif
+          - tf-psa-crypto
     - name: mender-mcu
       remote: mender
       revision: main

@@ -8,6 +8,10 @@ set(BOARD
     "Board for the Zephyr application"
 )
 
+# Disable -Werror in TF-PSA-Crypto (Zephyr 4.4+): upstream stubs trip
+# -Wunused-parameter under the GCC 14.3 shipped with Zephyr SDK 1.0.1.
+set(TF_PSA_CRYPTO_FATAL_WARNINGS OFF CACHE BOOL "" FORCE)
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(mender-mcu-integration)
