@@ -430,3 +430,120 @@ relevantes a tener en cuenta:
 4. Decidir si pineamos `mender-mcu` a un commit concreto o lo dejamos en
    `main` para Fase 2 (recomendación: dejar en `main` y ver qué pasa;
    pinear solo si rompe de forma irreproducible).
+
+---
+
+## Resultado final de la sesión
+
+### TL;DR
+
+- **Zephyr 4.4 NO es viable hoy con `mender-mcu/main`.** El bump de
+  Mbed TLS 3.6.5 → 4.1.0 que trae 4.4 reescribe la API de crypto y
+  privatiza headers. Mender-MCU está escrito contra la API legacy y
+  necesita una port completa a PSA crypto antes de poder migrar.
+- **Zephyr 4.3 SÍ funciona** con un cambio mínimo (2 Kconfigs).
+  Validado end-to-end: build verde, boot, WiFi, DHCP, TLS handshake
+  con Hosted Mender, polling estable, sin fugas de memoria.
+
+### Estado de las ramas al cierre
+
+| Rama | Estado | Notas |
+|---|---|---|
+| `tmp/4.2.0` | snapshot baseline 4.2.0 + fixes WiFi | preservada como fallback |
+| `chore/zephyr-4.4-phase-1` | `.gitignore` + `PLAN.md` | base común de las exploraciones |
+| `chore/zephyr-4.4-phase-2-bump-manifest` | `west.yml` a v4.4.0 + commit con errores expuestos | abandonada, queda como ref |
+| `chore/zephyr-4.4-phase-3-fixes` | migración PSA en curso, build llega a compilar y muere en APIs mbedtls 4.x removidas | abandonada, queda como ref |
+| **`chore/zephyr-4.3-bump`** | **upgrade a v4.3.0, build + runtime verdes** | **mergeable** |
+
+### Por qué 4.4 no entra hoy
+
+Mender-MCU usa la **API legacy de Mbed TLS 3.x** en al menos dos
+archivos:
+
+- `modules/mender-mcu/src/platform/sha/generic/mbedtls/sha.c`
+- `modules/mender-mcu/src/platform/tls/generic/mbedtls/tls.c`
+
+En Mbed TLS 4.1 (que viene en Zephyr 4.4):
+
+- Los headers `mbedtls/{sha256,bignum,ctr_drbg,entropy,ecdsa}.h` pasaron
+  a `mbedtls/private/`. Renombrar el include no es suficiente porque…
+- …muchas funciones cambiaron firma o desaparecieron, incluyendo:
+  - `mbedtls_pk_parse_key()` — signatura cambia.
+  - `mbedtls_pk_sign()` — signatura cambia.
+  - `mbedtls_pk_setup()`, `mbedtls_pk_info_from_type()`, `mbedtls_pk_ec()` — removidas.
+  - `mbedtls_ecp_curve_info`, `mbedtls_ecp_curve_list()` — removidas.
+  - `mbedtls_ecdsa_can_do()`, `mbedtls_ecdsa_genkey()` — removidas.
+  - `MBEDTLS_PK_ECKEY` — constante removida.
+  - struct member `mbedtls_ecp_keypair::grp_id` — removido.
+
+Todas estas operaciones tienen equivalente en la **API PSA Crypto**,
+pero migrar implica reescribir `sha.c` y `tls.c` por completo. Es un
+proyecto de varias sesiones, no un fix.
+
+Adicionalmente:
+
+- `modules/hal/espressif/.../mbedtls/port/include/mbedtls/bignum.h`
+  hace `#include_next "mbedtls/bignum.h"` esperando que exista un
+  header público con ese nombre. Tras Mbed TLS 4.x ese header sólo
+  existe como `mbedtls/private/bignum.h`. La port de Espressif también
+  necesita actualización upstream.
+
+### Por qué 4.3 sí entra
+
+Zephyr 4.3 trae **Mbed TLS 3.6.5** (LTS), que mantiene la API legacy
+que Mender-MCU usa. Los únicos roces fueron:
+
+1. En 4.3 `MBEDTLS_USE_PSA_CRYPTO` se auto-activa cuando
+   `MBEDTLS_PSA_CRYPTO_C` está on (transitively from elsewhere), lo que
+   cambia las precondiciones de las cipher suites `MBEDTLS_KEY_EXCHANGE_ECDHE_*`
+   para que busquen `PSA_WANT_ALG_ECDH` en vez de `MBEDTLS_ECDH_C`.
+   Fix: `CONFIG_MBEDTLS_USE_PSA_CRYPTO=n` en `prj.conf`.
+
+2. `mbedtls/library/pk.c` llama incondicionalmente a
+   `mbedtls_ecc_group_{to,from}_psa()`, cuyas declaraciones en
+   `psa_util_internal.h` están guardadas por
+   `PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY`. Fix:
+   `CONFIG_PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY=y` en `prj.conf`.
+
+### Resultado del runtime test en 4.3
+
+Hardware: `esp32s3_devkitc/esp32s3/procpu`, Hosted Mender, red WiFi
+`Fam_AB_iot` (Nexxt, WPA2 puro, 2.4 GHz). Build con SDK 0.17.0.
+
+```
+*** Booting Zephyr OS build v4.3.0 ***
+[00:00:08] DHCP IP: 192.168.68.106
+[00:00:08] Mender client activated and running!
+[00:00:12] mender: No deployment available
+[00:00:42] mender: Checking for deployment...
+[00:00:45] mender: No deployment available
+```
+
+Sin `memory allocation failed`, sin 409 Conflict, sin errores TLS.
+Polling estable cada 30s (el intervalo configurado de demo).
+
+### Dependencias del entorno (no van al repo)
+
+- **Zephyr SDK 0.17.0** — vale para 4.3 sin cambios. 1.0.1 también
+  funciona pero no hace falta.
+- **`jsonschema`** y **`esptool>=5.0`** instalados en el `python3.14`
+  del venv (no estaban; Zephyr 4.3 lo pide).
+
+### Trabajo abierto para futuras sesiones
+
+1. **Validar deployment real** en 4.3: subir un artefacto a Hosted
+   Mender y ejecutar update OTA completo (rollback incluido) — Fase 4
+   del plan original; no se llegó por falta de tiempo.
+2. **Decidir el merge** de `chore/zephyr-4.3-bump`:
+   - A `estape11/main` para tenerlo como baseline propio.
+   - PR a `mendersoftware/mender-mcu-integration` upstream — el cambio
+     es de solo 9 líneas y no introduce regresiones; probablemente
+     mergeable tras explicar la motivación.
+3. **Issue upstream a `mendersoftware/mender-mcu`** detallando los
+   bloqueos para Zephyr 4.4 (PSA crypto API migration) y proponiendo
+   un PR de porting cuando haya capacidad.
+4. **Issue upstream a `zephyrproject-rtos/hal_espressif`** para que la
+   port de mbedtls en `components/mbedtls/port/include/mbedtls/bignum.h`
+   apunte al header privatizado de Mbed TLS 4.x.
+5. Cuando los dos puntos anteriores se resuelvan, retomar
+   `chore/zephyr-4.4-phase-3-fixes` y completar la migración.
